@@ -1,0 +1,57 @@
+package com.mable.bank.domain;
+
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+class AccountTest {
+
+    private static final String VALID_ACCOUNT_NUMBER = "1111234522226789";
+
+    @Test
+    void debitReducesBalance() {
+        Account account = new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("100.00"));
+        account.debit(Money.fromDecimalString("40.00"));
+        assertThat(account.getBalance()).isEqualTo(Money.fromDecimalString("60.00"));
+    }
+
+    @Test
+    void creditIncreasesBalance() {
+        Account account = new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("100.00"));
+        account.credit(Money.fromDecimalString("40.00"));
+        assertThat(account.getBalance()).isEqualTo(Money.fromDecimalString("140.00"));
+    }
+
+    @Test
+    void canDebitExactlyDownToZero() {
+        Account account = new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("100.00"));
+        assertThat(account.canDebit(Money.fromDecimalString("100.00"))).isTrue();
+        account.debit(Money.fromDecimalString("100.00"));
+        assertThat(account.getBalance()).isEqualTo(Money.zero());
+    }
+
+    @Test
+    void cannotDebitBelowZero() {
+        Account account = new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("100.00"));
+        assertThat(account.canDebit(Money.fromDecimalString("100.01"))).isFalse();
+        assertThatThrownBy(() -> account.debit(Money.fromDecimalString("100.01")))
+                .isInstanceOf(InsufficientFundsException.class);
+        // balance is unchanged after a rejected debit
+        assertThat(account.getBalance()).isEqualTo(Money.fromDecimalString("100.00"));
+    }
+
+    @Test
+    void rejectsAccountNumbersThatAreNot16Digits() {
+        assertThatThrownBy(() -> new Account("12345", Money.zero()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Account("abcd234522226789", Money.zero()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void rejectsNegativeInitialBalance() {
+        assertThatThrownBy(() -> new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("-1.00")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+}
