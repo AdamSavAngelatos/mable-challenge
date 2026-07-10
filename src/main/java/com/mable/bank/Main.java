@@ -58,7 +58,7 @@ public final class Main {
         List<TransferResult> results = new ArrayList<>(transferProcessor.process(transferReadResult.transfers()));
         results.addAll(transferReadResult.invalidRows());
 
-        reportWriter.printToStdout(results, out);
+        reportWriter.printToStdout(results, ledger.listAccounts(), out);
 
         java.nio.file.Files.createDirectories(outputDir);
         balanceWriter.write(outputDir.resolve("updated-account-balances.csv"), ledger.listAccounts());

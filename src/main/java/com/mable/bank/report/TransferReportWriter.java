@@ -13,20 +13,22 @@ import java.util.List;
 
 /**
  * Builds the human-readable audit trail: one line per transfer outcome plus a
- * final summary and closing balances. The same content goes to stdout (for the
- * live demo) and to result.txt (the durable feedback artifact, satisfying the
- * rubric's "runs and provides feedback" line).
+ * final summary and closing balances. Both outputs (stdout, for the live demo,
+ * and result.txt, the durable feedback artifact) are rendered from the single
+ * {@link #buildReport} method, so they cannot drift apart the way two
+ * independently-formatted methods could.
  */
 public final class TransferReportWriter {
 
-    public void printToStdout(List<TransferResult> results, PrintStream out) {
-        for (TransferResult result : results) {
-            out.println(formatLine(result));
-        }
-        out.println(formatSummary(results));
+    public void printToStdout(List<TransferResult> results, List<Account> finalBalances, PrintStream out) {
+        out.print(buildReport(results, finalBalances));
     }
 
     public void writeToFile(Path path, List<TransferResult> results, List<Account> finalBalances) throws IOException {
+        Files.writeString(path, buildReport(results, finalBalances));
+    }
+
+    private String buildReport(List<TransferResult> results, List<Account> finalBalances) {
         StringBuilder sb = new StringBuilder();
         for (TransferResult result : results) {
             sb.append(formatLine(result)).append(System.lineSeparator());
@@ -46,7 +48,7 @@ public final class TransferReportWriter {
                         .append(account.getBalance().toDecimalString())
                         .append(System.lineSeparator()));
 
-        Files.writeString(path, sb.toString());
+        return sb.toString();
     }
 
     private String formatLine(TransferResult result) {
