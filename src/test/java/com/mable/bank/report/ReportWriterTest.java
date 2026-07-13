@@ -46,6 +46,7 @@ class ReportWriterTest {
 
         String report = writer.buildTransferReport(List.of(result));
 
+        assertThat(report).contains("Transactions:");
         assertThat(report).contains("[SUCCESS] 1111234522226789 -> 1212343433335665 $500.00");
         assertThat(report).contains("Processed 1 transfers: 1 succeeded, 0 failed.");
     }

@@ -41,13 +41,14 @@ public final class ReportWriter {
      * Formats the transfer-batch audit trail.
      *
      * @param results the outcome of each transfer in the batch, in file order
-     * @return one line per result plus a final counts summary; no balances section
-     *         -- see {@link #buildBalancesSection}
+     * @return a "Transactions:" heading, one line per result, and a final counts summary;
+     *         no balances section -- see {@link #buildBalancesSection}
      */
     public String buildTransferReport(List<TransferResult> results) {
         StringBuilder sb = new StringBuilder();
+        sb.append("Transactions:").append(System.lineSeparator());
         for (TransferResult result : results) {
-            sb.append(formatLine(result)).append(System.lineSeparator());
+            sb.append("  ").append(formatLine(result)).append(System.lineSeparator());
         }
         sb.append(System.lineSeparator())
                 .append(formatSummary(results))
