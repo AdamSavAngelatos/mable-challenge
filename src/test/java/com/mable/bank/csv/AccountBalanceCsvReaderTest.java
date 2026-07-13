@@ -106,6 +106,42 @@ class AccountBalanceCsvReaderTest {
         assertThat(result.rejectedRows().get(0).reason()).contains("not a valid decimal amount");
     }
 
+    @Test
+    void rejectsBothRowsForARepeatedAccountNumber() throws IOException {
+        Path file = writeFile(
+                "1111234522226789,5000.00\n"
+                        + "1111234522226789,9999.00\n"
+                        + "1212343433335665,1200.00\n"
+        );
+
+        AccountBalanceCsvReader.Result result = reader.read(file);
+
+        assertThat(result.accounts())
+                .extracting(Account::accountNumber)
+                .containsExactly("1212343433335665");
+        assertThat(result.rejectedRows())
+                .extracting(AccountBalanceCsvReader.RejectedRow::rawRow)
+                .containsExactlyInAnyOrder("1111234522226789,5000.00", "1111234522226789,9999.00");
+        assertThat(result.rejectedRows())
+                .allSatisfy(row -> assertThat(row.reason()).contains("duplicate account number: 1111234522226789"));
+    }
+
+    @Test
+    void rejectsAllThreeRowsWhenAnAccountNumberAppearsThreeTimes() throws IOException {
+        Path file = writeFile(
+                "1111234522226789,5000.00\n"
+                        + "1111234522226789,6000.00\n"
+                        + "1111234522226789,7000.00\n"
+        );
+
+        AccountBalanceCsvReader.Result result = reader.read(file);
+
+        assertThat(result.accounts()).isEmpty();
+        assertThat(result.rejectedRows()).hasSize(3);
+        assertThat(result.rejectedRows())
+                .allSatisfy(row -> assertThat(row.reason()).contains("duplicate account number: 1111234522226789"));
+    }
+
     private Path writeFile(String content) throws IOException {
         Path file = tempDir.resolve("balances.csv");
         Files.writeString(file, content);

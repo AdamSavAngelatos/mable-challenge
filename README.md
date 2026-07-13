@@ -100,6 +100,15 @@ already passed that check, so a malformed (or simply nonexistent) account
 number in a transfer always misses the lookup and comes back as
 `UNKNOWN_ACCOUNT` — the rejection is free.
 
+**A duplicate account number in the balances file rejects every occurrence,
+not just the extras.** The spec doesn't say what a repeated account number
+means, so there's no way to know which balance is actually correct — guessing
+(e.g. keeping the first or last row) would hide the problem instead of
+surfacing it. The naive alternative, a plain `Map.put()` per row, would have
+silently kept whichever occurrence came last with no indication anything was
+wrong; this trades that silent data loss for a loud, explicit rejection of
+every row involved.
+
 **Transfers within a batch are applied independently, in file order.** A
 rejected row (insufficient funds, unknown account) doesn't block later,
 unrelated transfers — the natural reading of "money cannot be transferred...
@@ -110,7 +119,12 @@ whole-batch abort.
 
 - **No database/persistence layer.** State lives in memory for one run;
   durability across runs comes from the `updated-account-balances.csv` output
-  instead — explicit and chainable, rather than automatic.
+  instead — explicit and chainable, rather than automatic. In a real
+  banking/production system, this state would live in a database instead,
+  persisting every account and transfer as it happens rather than only at
+  the end of a batch run — named plainly as a simplification specific to
+  this exercise's scope, not a claim that file-based state is how a real
+  system should work.
 - **Idempotency, precisely scoped.** This tool is a pure function of its two
   inputs, so re-running the _original_ files is naturally idempotent. The real
   risk is a chaining one: mistakenly reprocessing the same `transactions.csv`
@@ -133,3 +147,12 @@ whole-batch abort.
   for exactly this — suppressing non-essential output without redirecting
   stderr to `/dev/null` — which would be worth adding if this ran from cron
   rather than a terminal.
+- **Transfer report doesn't preserve exact file order when a row fails to
+  parse.** Successfully parsed transfers and unparseable rows are reported as
+  two separate groups — all processed results, then all invalid rows —
+  rather than interleaved as they appeared in the file (a file ordered
+  `[valid, invalid, valid]` reports as `[valid, valid, invalid]`). The fix is
+  straightforward — tag each row with its original line number while
+  parsing, then sort the combined results by that number before building the
+  report — just not done here, since it doesn't affect correctness, only the
+  report's presentation order.

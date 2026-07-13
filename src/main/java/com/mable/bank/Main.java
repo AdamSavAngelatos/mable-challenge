@@ -107,11 +107,7 @@ public final class Main {
         TransferCsvReader.Result transfers = transferReader.read(transactionsPath);
 
         // TODO: results below are not in true transactions.csv file order.
-        // Valid and invalid rows are reported as two separate groups (all processed rows,
-        // then all invalid rows) instead of interleaved as they appeared in the file --
-        // e.g. a file [valid, invalid, valid] reports as [valid, valid, invalid].
-        // Fix: have TransferCsvReader tag each row with its original line number as it's
-        // parsed, then sort the combined results by that number before building the report.
+        // See readme Known Simplifications for more detail
 
         // Apply the transfers
         List<TransferResult> results = new ArrayList<>(transferProcessor.process(transfers.transfers()));

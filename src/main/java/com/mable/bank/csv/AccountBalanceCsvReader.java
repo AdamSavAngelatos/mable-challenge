@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Reads the account balances CSV: one row per line, "accountNumber,balance",
@@ -35,24 +37,43 @@ public final class AccountBalanceCsvReader {
     public record RejectedRow(String rawRow, String reason) {
     }
 
+    private record ParsedRow(String rawRow, Account account) {
+    }
+
     /**
      * Reads and parses the balances CSV at {@code path}, one row per line. A row that
-     * fails to parse is recorded in {@link Result#rejectedRows()} rather than failing
-     * the whole read.
+     * fails to parse, or shares an account number with another row in the same file, is
+     * recorded in {@link Result#rejectedRows()} rather than failing the whole read.
+     * Every row for a repeated account number is rejected, not just the extras -- there's
+     * no way to know which one is actually correct, so none of them are guessed at.
      *
      * @param path the CSV file to read
-     * @return the parsed accounts and any rejected rows
+     * @return the parsed accounts (excluding any account number that appears more than
+     *         once in the file) and any rejected (invalid) rows
      * @throws IOException if {@code path} cannot be read
      */
     public Result read(Path path) throws IOException {
-        List<Account> accounts = new ArrayList<>();
+        List<ParsedRow> parsedRows = new ArrayList<>();
         List<RejectedRow> rejectedRows = new ArrayList<>();
         for (String line : Files.readAllLines(path)) {
             if (line.isBlank()) continue;
             try {
-                accounts.add(parseLine(line));
+                parsedRows.add(new ParsedRow(line, parseLine(line)));
             } catch (IllegalArgumentException e) {
                 rejectedRows.add(new RejectedRow(line, e.getMessage()));
+            }
+        }
+
+        Map<String, Long> occurrencesByAccountNumber = parsedRows.stream()
+                .collect(Collectors.groupingBy(row -> row.account().accountNumber(), Collectors.counting()));
+
+        List<Account> accounts = new ArrayList<>();
+        for (ParsedRow row : parsedRows) {
+            String accountNumber = row.account().accountNumber();
+            if (occurrencesByAccountNumber.get(accountNumber) > 1) {
+                rejectedRows.add(new RejectedRow(row.rawRow(), "duplicate account number: " + accountNumber));
+            } else {
+                accounts.add(row.account());
             }
         }
         return new Result(accounts, rejectedRows);
