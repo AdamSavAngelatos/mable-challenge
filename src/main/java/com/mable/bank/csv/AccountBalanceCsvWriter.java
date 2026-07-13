@@ -16,6 +16,14 @@ import java.util.stream.Collectors;
  */
 public final class AccountBalanceCsvWriter {
 
+    /**
+     * Writes {@code accounts}' closing balances to {@code path} in the balances-CSV
+     * schema, sorted by account number, overwriting any existing file.
+     *
+     * @param path     the file to write
+     * @param accounts the accounts to write
+     * @throws IOException if {@code path} cannot be written
+     */
     public void write(Path path, List<Account> accounts) throws IOException {
         String content = accounts.stream()
                 .sorted(Comparator.comparing(Account::accountNumber))

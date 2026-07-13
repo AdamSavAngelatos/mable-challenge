@@ -1,13 +1,24 @@
 package com.mable.bank.domain;
 
 /**
- * One row of a day's transactions CSV. The compact constructor validates its own
- * invariants as defense-in-depth: it must be impossible to construct an invalid
- * Transfer from anywhere in the codebase, not only via the CSV reading path (which
- * independently validates before ever constructing one).
+ * One row of a day's transactions CSV. Every time a Transfer is created, its fields
+ * are checked automatically -- so a Transfer with bad data (e.g. a blank account
+ * number) can never exist, no matter where in the code it gets created. This holds
+ * even though the CSV reader already checks each row itself before creating one; the
+ * check here means nothing else in the codebase could accidentally skip that step.
+ *
+ * @param fromAccountNumber the account to debit; must not be blank
+ * @param toAccountNumber   the account to credit; must not be blank
+ * @param amount            the amount to move; must not be {@code null}
  */
 public record Transfer(String fromAccountNumber, String toAccountNumber, Money amount) {
 
+    /**
+     * Checks the fields whenever a Transfer is created.
+     *
+     * @throws IllegalArgumentException if {@code fromAccountNumber} or {@code toAccountNumber}
+     *                                  is blank, or {@code amount} is {@code null}
+     */
     public Transfer {
         if (fromAccountNumber == null || fromAccountNumber.isBlank()) {
             throw new IllegalArgumentException("fromAccountNumber must not be blank");

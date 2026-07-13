@@ -20,11 +20,26 @@ public final class Money {
         this.amount = amount.setScale(SCALE, ROUNDING);
     }
 
+    /**
+     * Wraps an existing {@link BigDecimal} as a {@code Money}, normalizing it to
+     * this class's fixed scale and rounding policy.
+     *
+     * @param amount the raw amount; must not be {@code null}
+     * @return a {@code Money} wrapping {@code amount}
+     * @throws NullPointerException if {@code amount} is {@code null}
+     */
     public static Money of(BigDecimal amount) {
         Objects.requireNonNull(amount, "amount must not be null");
         return new Money(amount);
     }
 
+    /**
+     * Parses a decimal string (e.g. {@code "500.00"}) into a {@code Money}.
+     *
+     * @param value the decimal string to parse; must not be {@code null} or blank
+     * @return a {@code Money} representing {@code value}
+     * @throws IllegalArgumentException if {@code value} is blank or not a valid decimal
+     */
     public static Money fromDecimalString(String value) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("amount must not be blank");
@@ -44,6 +59,13 @@ public final class Money {
         return amount;
     }
 
+    /**
+     * Formats this amount as a plain decimal string.
+     *
+     * @return the amount formatted as e.g. {@code "500.00"}, with no grouping separators,
+     *         exponents, or currency symbol -- other code (e.g. the CSV writer) relies on
+     *         this exact format
+     */
     public String toDecimalString() {
         return amount.toPlainString();
     }
@@ -64,6 +86,10 @@ public final class Money {
         return this.amount.compareTo(other.amount) >= 0;
     }
 
+    /**
+     * Equal by numeric value, not by scale -- {@code Money.of(new BigDecimal("5"))}
+     * equals {@code Money.of(new BigDecimal("5.00"))}.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

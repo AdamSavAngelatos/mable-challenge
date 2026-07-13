@@ -19,9 +19,25 @@ import java.util.List;
  */
 public final class TransferCsvReader {
 
+    /**
+     * The outcome of reading a transactions CSV.
+     *
+     * @param transfers   the transfers successfully parsed, in file order
+     * @param invalidRows any rows that could not be parsed, each as a
+     *                    {@link com.mable.bank.domain.TransferStatus#INVALID_ROW} result
+     */
     public record Result(List<Transfer> transfers, List<TransferResult> invalidRows) {
     }
 
+    /**
+     * Reads and parses the transactions CSV at {@code path}, one row per line. A row
+     * that fails to parse is recorded in {@link Result#invalidRows()} rather than
+     * failing the whole read.
+     *
+     * @param path the CSV file to read
+     * @return the parsed transfers and any invalid rows
+     * @throws IOException if {@code path} cannot be read
+     */
     public Result read(Path path) throws IOException {
         List<Transfer> transfers = new ArrayList<>();
         List<TransferResult> invalidRows = new ArrayList<>();

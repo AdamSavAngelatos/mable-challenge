@@ -17,6 +17,13 @@ import java.util.function.Function;
  */
 public final class ReportWriter {
 
+    /**
+     * Formats the outcome of loading the balances CSV.
+     *
+     * @param loadResult the outcome of reading the balances CSV
+     * @return a summary line reporting how many accounts loaded, plus one line per
+     *         rejected row (if any)
+     */
     public String buildLoadSummary(AccountBalanceCsvReader.Result loadResult) {
         StringBuilder sb = new StringBuilder();
         sb.append("Loaded ").append(loadResult.accounts().size()).append(" accounts");
@@ -30,6 +37,13 @@ public final class ReportWriter {
         return sb.toString();
     }
 
+    /**
+     * Formats the transfer-batch audit trail.
+     *
+     * @param results the outcome of each transfer in the batch, in file order
+     * @return one line per result plus a final counts summary; no balances section
+     *         -- see {@link #buildBalancesSection}
+     */
     public String buildTransferReport(List<TransferResult> results) {
         StringBuilder sb = new StringBuilder();
         for (TransferResult result : results) {
@@ -43,9 +57,14 @@ public final class ReportWriter {
 
     /**
      * Renders a labeled, sorted account/balance listing -- used for both "Starting
-     * balances" (Account::getStartingBalance) and "Closing balances"
-     * (Account::getClosingBalance) against the same List<Account>, since each
-     * Account remembers both values for its whole lifetime.
+     * balances" ({@code Account::getStartingBalance}) and "Closing balances"
+     * ({@code Account::getClosingBalance}) against the same {@code List<Account>},
+     * since each {@code Account} remembers both values for its whole lifetime.
+     *
+     * @param heading  the section heading, e.g. {@code "Starting balances"}
+     * @param accounts the accounts to list, sorted by account number in the output
+     * @param balance  selects which of an account's balances to render
+     * @return the heading line followed by one indented "accountNumber: balance" line per account
      */
     public String buildBalancesSection(String heading, List<Account> accounts, Function<Account, Money> balance) {
         StringBuilder sb = new StringBuilder();

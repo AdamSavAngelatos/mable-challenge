@@ -19,6 +19,12 @@ public final class Ledger {
 
     private final Map<String, Account> accounts = new LinkedHashMap<>();
 
+    /**
+     * Replaces all currently loaded accounts with {@code newAccounts}.
+     *
+     * @param newAccounts the accounts to load -- discards, rather than merges with,
+     *                    whatever was previously loaded
+     */
     public void loadBalances(List<Account> newAccounts) {
         accounts.clear();
         for (Account account : newAccounts) {
@@ -30,10 +36,25 @@ public final class Ledger {
         return Optional.ofNullable(accounts.get(accountNumber));
     }
 
+    /**
+     * Returns all currently loaded accounts.
+     *
+     * @return all currently loaded accounts, in an unspecified order
+     */
     public List<Account> listAccounts() {
         return List.copyOf(accounts.values());
     }
 
+    /**
+     * Attempts to apply {@code transfer}: debits the source account and credits the
+     * destination account if, and only if, both accounts exist and the source has
+     * sufficient funds. Does not throw on a rejected transfer -- rejection is
+     * reported through the returned {@link TransferResult}.
+     *
+     * @param transfer the transfer to attempt
+     * @return the outcome: {@link TransferStatus#SUCCESS} if applied, otherwise the
+     *         specific rejection reason
+     */
     public TransferResult applyTransfer(Transfer transfer) {
         Account from = accounts.get(transfer.fromAccountNumber());
         if (from == null) {

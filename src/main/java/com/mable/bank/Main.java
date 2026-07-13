@@ -19,10 +19,16 @@ import java.util.List;
  * classes wired by hand here, which is clearer at this scale than any
  * framework convention would be.
  *
- * Usage: java -jar mable-bank-cli.jar <balances.csv> <transactions.csv> [outputDir]
+ * <p>Usage: {@code java -jar mable-bank-cli.jar <balances.csv> <transactions.csv> [outputDir]}
  */
 public final class Main {
 
+    /**
+     * Parses arguments and runs the CLI.
+     *
+     * @param args {@code <balances.csv> <transactions.csv> [outputDir]} -- exits with
+     *             status 1 and a usage message on stderr if the argument count is wrong
+     */
     public static void main(String[] args) {
         if (args.length < 2 || args.length > 3) {
             System.err.println("Usage: java -jar mable-bank-cli.jar <balances.csv> <transactions.csv> [outputDir]");

@@ -8,6 +8,13 @@ package com.mable.bank.domain;
  */
 public final class InsufficientFundsException extends RuntimeException {
 
+    /**
+     * Creates the exception with a message describing the failed debit.
+     *
+     * @param accountNumber    the account the debit was attempted against
+     * @param availableBalance the account's balance at the time of the attempt
+     * @param requestedAmount  the amount that was requested to be debited
+     */
     public InsufficientFundsException(String accountNumber, Money availableBalance, Money requestedAmount) {
         super("Account " + accountNumber + " has insufficient funds: availableBalance=" + availableBalance
                 + ", requested=" + requestedAmount);

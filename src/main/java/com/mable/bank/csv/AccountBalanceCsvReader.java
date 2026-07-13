@@ -16,13 +16,34 @@ import java.util.List;
  */
 public final class AccountBalanceCsvReader {
 
+    /**
+     * The outcome of reading a balances CSV.
+     *
+     * @param accounts     the accounts successfully parsed, in file order
+     * @param rejectedRows any rows that could not be parsed
+     */
     public record Result(List<Account> accounts, List<RejectedRow> rejectedRows) {
     }
 
-    /** A balance row that failed to parse. Formatting for display is the report writer's job, not the reader's. */
+    /**
+     * A balance row that failed to parse. Formatting for display is the report writer's
+     * job, not the reader's.
+     *
+     * @param rawRow the original, unmodified CSV line
+     * @param reason a human-readable explanation of why it failed to parse
+     */
     public record RejectedRow(String rawRow, String reason) {
     }
 
+    /**
+     * Reads and parses the balances CSV at {@code path}, one row per line. A row that
+     * fails to parse is recorded in {@link Result#rejectedRows()} rather than failing
+     * the whole read.
+     *
+     * @param path the CSV file to read
+     * @return the parsed accounts and any rejected rows
+     * @throws IOException if {@code path} cannot be read
+     */
     public Result read(Path path) throws IOException {
         List<Account> accounts = new ArrayList<>();
         List<RejectedRow> rejectedRows = new ArrayList<>();

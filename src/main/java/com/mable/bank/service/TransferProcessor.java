@@ -19,6 +19,14 @@ public final class TransferProcessor {
         this.ledger = ledger;
     }
 
+    /**
+     * Processes {@code transfers} in order.
+     *
+     * @param transfers the day's transfers, in file order
+     * @return one result per transfer, in the same order as {@code transfers}, each
+     *         independent of the others -- see the class-level note on rejections
+     *         not blocking subsequent transfers
+     */
     public List<TransferResult> process(List<Transfer> transfers) {
         List<TransferResult> results = new ArrayList<>(transfers.size());
         for (Transfer transfer : transfers) {

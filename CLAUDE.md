@@ -36,6 +36,7 @@ Four packages under `com.mable.bank`, each with a single, narrow job. `Main.run(
 - **No interfaces for single-implementation classes** (`Ledger`, `TransferProcessor`). Tests use the real implementations directly rather than mocking through an interface that has no second implementation to justify it.
 - **A malformed account number in a transfer row is not validated at CSV-parse time.** It's left to surface as `UNKNOWN_ACCOUNT` when `Ledger` looks it up, so "what makes an account number valid" has one source of truth instead of two checks that could drift.
 - **`Main.run()`** is package-private and takes an injected `PrintStream` (not a hardcoded `System.out`), specifically so `MainIntegrationTest` can capture and assert on stdout without touching real global state.
+- **Public classes and methods get industry-standard Javadoc (summary sentence + `@param`/`@return`/`@throws`), except where it would be pure restatement of a self-evident signature** (e.g. a one-line getter that just returns a field with no invariant worth calling out — see `Account.accountNumber()`/`credit()`, or `Money.add()`/`isNegative()`, which have none). Document real, non-obvious facts (an invariant, a formatting/ordering guarantee, an exception contract); don't manufacture a sentence just to have one. Validate with `mvn javadoc:javadoc` after any doc pass — it catches malformed HTML from raw `<`/`>` in prose (use `{@code List<Account>}`, not `List<Account>`) and tag blocks missing a leading summary, which compilation won't catch.
 
 ## Testing
 
