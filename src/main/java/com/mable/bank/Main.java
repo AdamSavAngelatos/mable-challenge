@@ -30,21 +30,49 @@ public final class Main {
      *             status 1 and a usage message on stderr if the argument count is wrong
      */
     public static void main(String[] args) {
-        if (args.length < 2 || args.length > 3) {
-            System.err.println("Usage: java -jar mable-bank-cli.jar <balances.csv> <transactions.csv> [outputDir]");
-            System.exit(1);
-        }
-
-        Path balancesPath = Path.of(args[0]);
-        Path transactionsPath = Path.of(args[1]);
-        Path outputDir = args.length == 3 ? Path.of(args[2]) : Path.of(".");
-
         try {
-            run(balancesPath, transactionsPath, outputDir, System.out);
+            Args parsedArgs = parseArgs(args);
+            run(parsedArgs.balancesPath(), parsedArgs.transactionsPath(), parsedArgs.outputDir(), System.out);
+        } catch (IllegalArgumentException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
         } catch (IOException e) {
             System.err.println("Failed to read/write files: " + e.getMessage());
             System.exit(1);
         }
+    }
+
+    /**
+     * The parsed, ready-to-use form of {@code main}'s {@code String[] args}.
+     *
+     * @param balancesPath     the balances CSV to load
+     * @param transactionsPath the day's transactions CSV to apply
+     * @param outputDir        directory the output files are written to; the current
+     *                         directory if not given on the command line
+     */
+    record Args(Path balancesPath, Path transactionsPath, Path outputDir) {
+    }
+
+    /**
+     * Parses and validates {@code main}'s raw arguments. Kept separate from {@code main}
+     * itself, which can't be unit tested directly since a failed parse ends in
+     * {@code System.exit}.
+     *
+     * @param args {@code <balances.csv> <transactions.csv> [outputDir]}
+     * @return the parsed arguments, with {@code outputDir} defaulted to {@code "."}
+     *         if not given
+     * @throws IllegalArgumentException if {@code args} has fewer than 2 or more than 3 elements;
+     *                                   the message is the usage line to print on stderr
+     */
+    static Args parseArgs(String[] args) {
+        if (args.length < 2 || args.length > 3) {
+            throw new IllegalArgumentException(
+                    "Usage: java -jar mable-bank-cli.jar <balances.csv> <transactions.csv> [outputDir]");
+        }
+        Path balancesPath = Path.of(args[0]);
+        Path transactionsPath = Path.of(args[1]);
+        Path outputDir = args.length == 3 ? Path.of(args[2]) : Path.of(".");
+        return new Args(balancesPath, transactionsPath, outputDir);
     }
 
     /**
