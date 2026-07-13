@@ -17,6 +17,8 @@ import java.util.Optional;
  */
 public final class Ledger {
 
+    // LinkedHashMap, not HashMap: the ledger should faithfully mirror the order accounts
+    // were loaded in (i.e. the CSV's own order), not an arbitrary hash-bucket order.
     private final Map<String, Account> accounts = new LinkedHashMap<>();
 
     /**
@@ -33,6 +35,7 @@ public final class Ledger {
     }
 
     public Optional<Account> getAccount(String accountNumber) {
+        // Optional forces the caller to explicitly handle a realistic null lookup
         return Optional.ofNullable(accounts.get(accountNumber));
     }
 
