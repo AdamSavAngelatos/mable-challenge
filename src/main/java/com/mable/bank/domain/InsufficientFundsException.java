@@ -8,8 +8,8 @@ package com.mable.bank.domain;
  */
 public final class InsufficientFundsException extends RuntimeException {
 
-    public InsufficientFundsException(String accountNumber, Money closingBalance, Money requestedAmount) {
-        super("Account " + accountNumber + " has insufficient funds: closingBalance=" + closingBalance
+    public InsufficientFundsException(String accountNumber, Money availableBalance, Money requestedAmount) {
+        super("Account " + accountNumber + " has insufficient funds: availableBalance=" + availableBalance
                 + ", requested=" + requestedAmount);
     }
 }

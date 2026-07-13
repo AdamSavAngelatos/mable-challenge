@@ -35,7 +35,7 @@ class ReportWriterTest {
 
         String summary = writer.buildLoadSummary(result);
 
-        assertThat(summary).contains("Loaded 0 accounts (1 rows rejected)");
+        assertThat(summary).contains("Loaded 0 accounts (1 row(s) rejected)");
         assertThat(summary).contains("[REJECTED] bad,row -> expected 2 fields, found 1");
     }
 

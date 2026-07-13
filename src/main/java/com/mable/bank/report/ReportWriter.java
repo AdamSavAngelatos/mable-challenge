@@ -21,7 +21,7 @@ public final class ReportWriter {
         StringBuilder sb = new StringBuilder();
         sb.append("Loaded ").append(loadResult.accounts().size()).append(" accounts");
         if (!loadResult.rejectedRows().isEmpty()) {
-            sb.append(" (").append(loadResult.rejectedRows().size()).append(" rows rejected)");
+            sb.append(" (").append(loadResult.rejectedRows().size()).append(" row(s) rejected)");
         }
         sb.append(System.lineSeparator());
         loadResult.rejectedRows().forEach(row ->
