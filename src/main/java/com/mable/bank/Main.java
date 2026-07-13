@@ -72,11 +72,11 @@ public final class Main {
         ReportWriter reportWriter = new ReportWriter();
 
         // Load starting balances into the ledger.
-        AccountBalanceCsvReader.Result loadResult = balanceReader.read(balancesPath);
-        ledger.loadBalances(loadResult.accounts());
+        AccountBalanceCsvReader.Result balances = balanceReader.read(balancesPath);
+        ledger.loadBalances(balances.accounts());
 
         // Read the transfers csv data
-        TransferCsvReader.Result transferReadResult = transferReader.read(transactionsPath);
+        TransferCsvReader.Result transfers = transferReader.read(transactionsPath);
 
         // TODO: results below are not in true transactions.csv file order.
         // Valid and invalid rows are reported as two separate groups (all processed rows,
@@ -86,14 +86,14 @@ public final class Main {
         // parsed, then sort the combined results by that number before building the report.
 
         // Apply the transfers
-        List<TransferResult> results = new ArrayList<>(transferProcessor.process(transferReadResult.transfers()));
+        List<TransferResult> results = new ArrayList<>(transferProcessor.process(transfers.transfers()));
         // Add back any original transfer data that failed to parse
-        results.addAll(transferReadResult.invalidRows());
+        results.addAll(transfers.invalidRows());
 
         List<Account> accounts = ledger.listAccounts();
 
         // Compose one combined report (starting balances, transfer audit trail and closing balances) and write it identically to stdout and result.txt
-        String report = reportWriter.buildLoadSummary(loadResult)
+        String report = reportWriter.buildLoadSummary(balances)
                 + System.lineSeparator()
                 + reportWriter.buildBalancesSection("Starting balances", accounts, Account::getStartingBalance)
                 + System.lineSeparator()
