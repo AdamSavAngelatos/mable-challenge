@@ -3,5 +3,6 @@ target/
 .idea/
 *.iml
 .vscode/
+.claude/
 result.txt
 updated-account-balances.csv
