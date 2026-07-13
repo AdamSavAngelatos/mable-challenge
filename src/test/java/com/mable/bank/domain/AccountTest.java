@@ -10,17 +10,17 @@ class AccountTest {
     private static final String VALID_ACCOUNT_NUMBER = "1111234522226789";
 
     @Test
-    void debitReducesBalance() {
+    void debitReducesClosingBalance() {
         Account account = new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("100.00"));
         account.debit(Money.fromDecimalString("40.00"));
-        assertThat(account.getBalance()).isEqualTo(Money.fromDecimalString("60.00"));
+        assertThat(account.getClosingBalance()).isEqualTo(Money.fromDecimalString("60.00"));
     }
 
     @Test
-    void creditIncreasesBalance() {
+    void creditIncreasesClosingBalance() {
         Account account = new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("100.00"));
         account.credit(Money.fromDecimalString("40.00"));
-        assertThat(account.getBalance()).isEqualTo(Money.fromDecimalString("140.00"));
+        assertThat(account.getClosingBalance()).isEqualTo(Money.fromDecimalString("140.00"));
     }
 
     @Test
@@ -28,7 +28,7 @@ class AccountTest {
         Account account = new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("100.00"));
         assertThat(account.canDebit(Money.fromDecimalString("100.00"))).isTrue();
         account.debit(Money.fromDecimalString("100.00"));
-        assertThat(account.getBalance()).isEqualTo(Money.zero());
+        assertThat(account.getClosingBalance()).isEqualTo(Money.zero());
     }
 
     @Test
@@ -38,7 +38,25 @@ class AccountTest {
         assertThatThrownBy(() -> account.debit(Money.fromDecimalString("100.01")))
                 .isInstanceOf(InsufficientFundsException.class);
         // balance is unchanged after a rejected debit
-        assertThat(account.getBalance()).isEqualTo(Money.fromDecimalString("100.00"));
+        assertThat(account.getClosingBalance()).isEqualTo(Money.fromDecimalString("100.00"));
+    }
+
+    @Test
+    void startingBalanceStaysFrozenWhileClosingBalanceChanges() {
+        Account account = new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("100.00"));
+
+        account.debit(Money.fromDecimalString("40.00"));
+        account.credit(Money.fromDecimalString("10.00"));
+
+        assertThat(account.getStartingBalance()).isEqualTo(Money.fromDecimalString("100.00"));
+        assertThat(account.getClosingBalance()).isEqualTo(Money.fromDecimalString("70.00"));
+    }
+
+    @Test
+    void startingAndClosingBalanceAreEqualImmediatelyAfterConstruction() {
+        Account account = new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("100.00"));
+
+        assertThat(account.getStartingBalance()).isEqualTo(account.getClosingBalance());
     }
 
     @Test
@@ -50,7 +68,7 @@ class AccountTest {
     }
 
     @Test
-    void rejectsNegativeInitialBalance() {
+    void rejectsNegativeStartingBalance() {
         assertThatThrownBy(() -> new Account(VALID_ACCOUNT_NUMBER, Money.fromDecimalString("-1.00")))
                 .isInstanceOf(IllegalArgumentException.class);
     }

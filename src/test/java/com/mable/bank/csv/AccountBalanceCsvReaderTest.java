@@ -28,7 +28,7 @@ class AccountBalanceCsvReaderTest {
         // Account is an entity (identity = accountNumber), not a value object, so it
         // has no value-based equals() -- assert on the fields the reader is responsible for.
         assertThat(result.accounts())
-                .extracting(Account::accountNumber, a -> a.getBalance().toDecimalString())
+                .extracting(Account::accountNumber, a -> a.getClosingBalance().toDecimalString())
                 .containsExactly(
                         tuple("1111234522226789", "5000.00"),
                         tuple("1212343433335665", "1200.00")
@@ -52,7 +52,7 @@ class AccountBalanceCsvReaderTest {
 
         assertThat(result.accounts()).hasSize(1);
         assertThat(result.rejectedRows()).hasSize(1);
-        assertThat(result.rejectedRows().get(0)).contains("expected 2 fields");
+        assertThat(result.rejectedRows().get(0).reason()).contains("expected 2 fields");
     }
 
     @Test

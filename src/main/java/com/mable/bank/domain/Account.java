@@ -4,50 +4,55 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
- * A bank account. The $0 floor is enforced here, inside debit(), so it is
- * impossible to construct a call path anywhere in the system that overdraws
- * an account.
+ * A bank account. Tracks both its starting balance (frozen at construction,
+ * never changes again) and its closing balance (mutated by debit()/credit()).
  */
 public final class Account {
 
     private static final Pattern ACCOUNT_NUMBER_PATTERN = Pattern.compile("\\d{16}");
 
     private final String accountNumber;
-    private Money balance;
+    private final Money startingBalance;
+    private Money closingBalance;
 
-    public Account(String accountNumber, Money balance) {
+    public Account(String accountNumber, Money startingBalance) {
         Objects.requireNonNull(accountNumber, "accountNumber must not be null");
-        Objects.requireNonNull(balance, "balance must not be null");
+        Objects.requireNonNull(startingBalance, "startingBalance must not be null");
         if (!ACCOUNT_NUMBER_PATTERN.matcher(accountNumber).matches()) {
             throw new IllegalArgumentException("accountNumber must be exactly 16 digits: " + accountNumber);
         }
-        if (balance.isNegative()) {
-            throw new IllegalArgumentException("initial balance must not be negative: " + balance);
+        if (startingBalance.isNegative()) {
+            throw new IllegalArgumentException("starting balance must not be negative: " + startingBalance);
         }
         this.accountNumber = accountNumber;
-        this.balance = balance;
+        this.startingBalance = startingBalance;
+        this.closingBalance = startingBalance;
     }
 
     public String accountNumber() {
         return accountNumber;
     }
 
-    public Money getBalance() {
-        return balance;
+    public Money getStartingBalance() {
+        return startingBalance;
+    }
+
+    public Money getClosingBalance() {
+        return closingBalance;
     }
 
     public boolean canDebit(Money amount) {
-        return balance.isGreaterThanOrEqualTo(amount);
+        return closingBalance.isGreaterThanOrEqualTo(amount);
     }
 
     public void debit(Money amount) {
         if (!canDebit(amount)) {
-            throw new InsufficientFundsException(accountNumber, balance, amount);
+            throw new InsufficientFundsException(accountNumber, closingBalance, amount);
         }
-        balance = balance.subtract(amount);
+        closingBalance = closingBalance.subtract(amount);
     }
 
     public void credit(Money amount) {
-        balance = balance.add(amount);
+        closingBalance = closingBalance.add(amount);
     }
 }

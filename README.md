@@ -14,7 +14,7 @@ java -jar target/mable-bank-cli-1.0.0.jar <balances.csv> <transactions.csv> [out
 
 - **`updated-account-balances.csv`** — the closing balances, in the exact same
   schema as the input balances file. This is the real state output: a day's
-  closing balances are the next day's opening balances, so this file is meant
+  closing balances are the next day's starting balances, so this file is meant
   to be fed straight back in as `<balances.csv>` for the following day's run.
 - **`result.txt`** — a human-readable audit trail: one line per transfer with
   its outcome, plus a summary. The same content also prints to stdout live.

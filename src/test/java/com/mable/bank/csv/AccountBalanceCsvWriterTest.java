@@ -46,7 +46,7 @@ class AccountBalanceCsvWriterTest {
 
         assertThat(reRead.rejectedRows()).isEmpty();
         assertThat(reRead.accounts())
-                .extracting(Account::accountNumber, a -> a.getBalance().toDecimalString())
+                .extracting(Account::accountNumber, a -> a.getClosingBalance().toDecimalString())
                 .containsExactlyInAnyOrder(
                         tuple("1111234522226789", "4820.50"),
                         tuple("1212343433335665", "1725.60")

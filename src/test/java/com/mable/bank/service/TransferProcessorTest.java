@@ -60,8 +60,8 @@ class TransferProcessorTest {
 
         assertThat(results).extracting(TransferResult::status)
                 .containsExactly(TransferStatus.SUCCESS, TransferStatus.INSUFFICIENT_FUNDS, TransferStatus.SUCCESS);
-        assertThat(ledger.getAccount(D).orElseThrow().getBalance()).isEqualTo(Money.fromDecimalString("45.00"));
-        assertThat(ledger.getAccount(E).orElseThrow().getBalance()).isEqualTo(Money.fromDecimalString("5.00"));
+        assertThat(ledger.getAccount(D).orElseThrow().getClosingBalance()).isEqualTo(Money.fromDecimalString("45.00"));
+        assertThat(ledger.getAccount(E).orElseThrow().getClosingBalance()).isEqualTo(Money.fromDecimalString("5.00"));
     }
 
     @Test

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 class LedgerTest {
 
@@ -34,8 +35,8 @@ class LedgerTest {
         TransferResult result = ledger.applyTransfer(new Transfer(FROM, TO, Money.fromDecimalString("30.00")));
 
         assertThat(result.status()).isEqualTo(TransferStatus.SUCCESS);
-        assertThat(ledger.getAccount(FROM).orElseThrow().getBalance()).isEqualTo(Money.fromDecimalString("70.00"));
-        assertThat(ledger.getAccount(TO).orElseThrow().getBalance()).isEqualTo(Money.fromDecimalString("80.00"));
+        assertThat(ledger.getAccount(FROM).orElseThrow().getClosingBalance()).isEqualTo(Money.fromDecimalString("70.00"));
+        assertThat(ledger.getAccount(TO).orElseThrow().getClosingBalance()).isEqualTo(Money.fromDecimalString("80.00"));
     }
 
     @Test
@@ -43,8 +44,8 @@ class LedgerTest {
         TransferResult result = ledger.applyTransfer(new Transfer(FROM, TO, Money.fromDecimalString("1000.00")));
 
         assertThat(result.status()).isEqualTo(TransferStatus.INSUFFICIENT_FUNDS);
-        assertThat(ledger.getAccount(FROM).orElseThrow().getBalance()).isEqualTo(Money.fromDecimalString("100.00"));
-        assertThat(ledger.getAccount(TO).orElseThrow().getBalance()).isEqualTo(Money.fromDecimalString("50.00"));
+        assertThat(ledger.getAccount(FROM).orElseThrow().getClosingBalance()).isEqualTo(Money.fromDecimalString("100.00"));
+        assertThat(ledger.getAccount(TO).orElseThrow().getClosingBalance()).isEqualTo(Money.fromDecimalString("50.00"));
     }
 
     @Test
@@ -66,5 +67,24 @@ class LedgerTest {
         assertThat(ledger.getAccount(FROM)).isEmpty();
         assertThat(ledger.getAccount(UNKNOWN)).isPresent();
         assertThat(ledger.listAccounts()).hasSize(1);
+    }
+
+    @Test
+    void listAccountsExposesBothStartingAndClosingBalanceEvenAfterTransfersRun() {
+        // Called *after* the transfer, deliberately -- proving getStartingBalance()
+        // still reports the true original value (it's frozen at construction, on
+        // Account itself), while getClosingBalance() reflects the mutation.
+        ledger.applyTransfer(new Transfer(FROM, TO, Money.fromDecimalString("30.00")));
+
+        List<Account> accounts = ledger.listAccounts();
+
+        assertThat(accounts)
+                .extracting(Account::accountNumber,
+                        a -> a.getStartingBalance().toDecimalString(),
+                        a -> a.getClosingBalance().toDecimalString())
+                .containsExactlyInAnyOrder(
+                        tuple(FROM, "100.00", "70.00"),
+                        tuple(TO, "50.00", "80.00")
+                );
     }
 }

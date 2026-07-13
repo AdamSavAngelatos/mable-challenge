@@ -1,6 +1,8 @@
 package com.mable.bank;
 
 import com.mable.bank.csv.AccountBalanceCsvReader;
+import com.mable.bank.domain.Account;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -33,7 +35,7 @@ class MainIntegrationTest {
 
         assertThat(closing.rejectedRows()).isEmpty();
         assertThat(closing.accounts())
-                .extracting(a -> a.accountNumber(), a -> a.getBalance().toDecimalString())
+                .extracting(a -> a.accountNumber(), a -> a.getClosingBalance().toDecimalString())
                 .containsExactlyInAnyOrder(
                         tuple("1111234522226789", "4820.50"),
                         tuple("1111234522221234", "9974.40"),
@@ -45,6 +47,18 @@ class MainIntegrationTest {
         String report = Files.readString(outputDir.resolve("result.txt"));
         assertThat(report).contains("Processed 4 transfers: 4 succeeded, 0 failed.");
         assertThat(stdout.toString(StandardCharsets.UTF_8)).contains("Loaded 5 accounts");
+
+        // Starting balances must reflect the true original values, not the post-transfer
+        // ones -- guarded by Account.getStartingBalance() being frozen at construction,
+        // independent of when listAccounts() happens to be called.
+        assertThat(report).contains(
+                "Starting balances:" + System.lineSeparator()
+                        + "  1111234522221234: 10000.00" + System.lineSeparator()
+                        + "  1111234522226789: 5000.00" + System.lineSeparator()
+                        + "  1212343433335665: 1200.00" + System.lineSeparator()
+                        + "  2222123433331212: 550.00" + System.lineSeparator()
+                        + "  3212343433335755: 50000.00" + System.lineSeparator()
+        );
     }
 
     @Test
@@ -76,7 +90,7 @@ class MainIntegrationTest {
 
         assertThat(day2Closing.rejectedRows()).isEmpty();
         assertThat(day2Closing.accounts())
-                .extracting(a -> a.accountNumber(), a -> a.getBalance().toDecimalString())
+                .extracting(Account::accountNumber, a -> a.getClosingBalance().toDecimalString())
                 .containsExactlyInAnyOrder(
                         tuple("1111234522226789", "4820.50"),
                         tuple("1111234522221234", "14974.40"),

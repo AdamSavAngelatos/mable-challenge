@@ -3,8 +3,9 @@ package com.mable.bank;
 import com.mable.bank.csv.AccountBalanceCsvReader;
 import com.mable.bank.csv.AccountBalanceCsvWriter;
 import com.mable.bank.csv.TransferCsvReader;
+import com.mable.bank.domain.Account;
 import com.mable.bank.domain.TransferResult;
-import com.mable.bank.report.TransferReportWriter;
+import com.mable.bank.report.ReportWriter;
 import com.mable.bank.service.Ledger;
 import com.mable.bank.service.TransferProcessor;
 
@@ -41,28 +42,41 @@ public final class Main {
     }
 
     static void run(Path balancesPath, Path transactionsPath, Path outputDir, java.io.PrintStream out) throws IOException {
+        // Wire up the object graph by hand -- no DI framework needed at this size.
         Ledger ledger = new Ledger();
         TransferProcessor transferProcessor = new TransferProcessor(ledger);
         AccountBalanceCsvReader balanceReader = new AccountBalanceCsvReader();
         AccountBalanceCsvWriter balanceWriter = new AccountBalanceCsvWriter();
         TransferCsvReader transferReader = new TransferCsvReader();
-        TransferReportWriter reportWriter = new TransferReportWriter();
+        ReportWriter reportWriter = new ReportWriter();
 
+        // Load starting balances into the ledger.
         AccountBalanceCsvReader.Result loadResult = balanceReader.read(balancesPath);
-        out.println("Loaded " + loadResult.accounts().size() + " accounts"
-                + (loadResult.rejectedRows().isEmpty() ? "" : " (" + loadResult.rejectedRows().size() + " rows rejected)"));
-        loadResult.rejectedRows().forEach(row -> out.println("  [REJECTED] " + row));
         ledger.loadBalances(loadResult.accounts());
 
+        // Read the transfers csv data
         TransferCsvReader.Result transferReadResult = transferReader.read(transactionsPath);
+        // Apply the transfers
         List<TransferResult> results = new ArrayList<>(transferProcessor.process(transferReadResult.transfers()));
+        // Add back any original transfer data that failed to parse
         results.addAll(transferReadResult.invalidRows());
 
-        reportWriter.printToStdout(results, ledger.listAccounts(), out);
+        List<Account> accounts = ledger.listAccounts();
+
+        // Compose one combined report (starting balances, transfer audit trail and closing balances) and write it identically to stdout and result.txt
+        String report = reportWriter.buildLoadSummary(loadResult)
+                + System.lineSeparator()
+                + reportWriter.buildBalancesSection("Starting balances", accounts, Account::getStartingBalance)
+                + System.lineSeparator()
+                + reportWriter.buildTransferReport(results)
+                + System.lineSeparator()
+                + reportWriter.buildBalancesSection("Closing balances", accounts, Account::getClosingBalance);
+        out.print(report);
 
         java.nio.file.Files.createDirectories(outputDir);
-        balanceWriter.write(outputDir.resolve("updated-account-balances.csv"), ledger.listAccounts());
-        reportWriter.writeToFile(outputDir.resolve("result.txt"), results, ledger.listAccounts());
+        // Main output of program - the updated csv and persistent audit trail
+        balanceWriter.write(outputDir.resolve("updated-account-balances.csv"), accounts);
+        java.nio.file.Files.writeString(outputDir.resolve("result.txt"), report);
     }
 
     private Main() {

@@ -16,18 +16,22 @@ import java.util.List;
  */
 public final class AccountBalanceCsvReader {
 
-    public record Result(List<Account> accounts, List<String> rejectedRows) {
+    public record Result(List<Account> accounts, List<RejectedRow> rejectedRows) {
+    }
+
+    /** A balance row that failed to parse. Formatting for display is the report writer's job, not the reader's. */
+    public record RejectedRow(String rawRow, String reason) {
     }
 
     public Result read(Path path) throws IOException {
         List<Account> accounts = new ArrayList<>();
-        List<String> rejectedRows = new ArrayList<>();
+        List<RejectedRow> rejectedRows = new ArrayList<>();
         for (String line : Files.readAllLines(path)) {
             if (line.isBlank()) continue;
             try {
                 accounts.add(parseLine(line));
             } catch (IllegalArgumentException e) {
-                rejectedRows.add(line + " -> " + e.getMessage());
+                rejectedRows.add(new RejectedRow(line, e.getMessage()));
             }
         }
         return new Result(accounts, rejectedRows);
