@@ -45,28 +45,65 @@ class AccountBalanceCsvReaderTest {
     }
 
     @Test
-    void rejectsRowsWithWrongFieldCountWithoutFailingTheWholeFile() throws IOException {
-        Path file = writeFile("1111234522226789,5000.00,extra\n1212343433335665,1200.00\n");
-
-        AccountBalanceCsvReader.Result result = reader.read(file);
-
-        assertThat(result.accounts()).hasSize(1);
-        assertThat(result.rejectedRows()).hasSize(1);
-        assertThat(result.rejectedRows().get(0).reason()).contains("expected 2 fields");
-    }
-
-    @Test
-    void rejectsMalformedAccountNumberOrAmount() throws IOException {
+    void oneMalformedRowDoesNotFailTheWholeFile() throws IOException {
         Path file = writeFile(
-                "not-16-digits,5000.00\n"
-                        + "1111234522226789,not-a-number\n"
+                "1111234522226789,5000.00\n"
+                        + "bad-row\n"
                         + "1212343433335665,1200.00\n"
         );
 
         AccountBalanceCsvReader.Result result = reader.read(file);
 
+        assertThat(result.accounts()).hasSize(2);
+        assertThat(result.rejectedRows()).hasSize(1);
+    }
+
+    @Test
+    void rejectsRowsWithWrongFieldCount() throws IOException {
+        // 3 fields, should be 2
+        Path file = writeFile("1111234522226789,5000.00,extra\n");
+
+        AccountBalanceCsvReader.Result result = reader.read(file);
+
+        assertThat(result.accounts()).isEmpty();
+        assertThat(result.rejectedRows()).hasSize(1);
+        assertThat(result.rejectedRows().get(0).reason()).contains("expected 2 fields");
+        assertThat(result.rejectedRows().get(0).rawRow()).isEqualTo("1111234522226789,5000.00,extra");
+    }
+
+    @Test
+    void rejectsAccountNumberWithWrongLength() throws IOException {
+        // First account number is 15 digits
+        Path file = writeFile("111123452222678,5000.00\n1212343433335665,1200.00\n");
+
+        AccountBalanceCsvReader.Result result = reader.read(file);
+
         assertThat(result.accounts()).hasSize(1);
-        assertThat(result.rejectedRows()).hasSize(2);
+        assertThat(result.rejectedRows()).hasSize(1);
+        assertThat(result.rejectedRows().get(0).reason()).contains("exactly 16 digits");
+    }
+
+    @Test
+    void rejectsAccountNumberWithNonDigitCharacters() throws IOException {
+        // First account number is 16 characters, but one is a letter, not a digit
+        Path file = writeFile("1111234522226A89,5000.00\n1212343433335665,1200.00\n");
+
+        AccountBalanceCsvReader.Result result = reader.read(file);
+
+        assertThat(result.accounts()).hasSize(1);
+        assertThat(result.rejectedRows()).hasSize(1);
+        assertThat(result.rejectedRows().get(0).reason()).contains("exactly 16 digits");
+    }
+
+    @Test
+    void rejectsMalformedAmount() throws IOException {
+        Path file = writeFile("1111234522226789,not-a-number\n1212343433335665,1200.00\n");
+
+        AccountBalanceCsvReader.Result result = reader.read(file);
+
+        assertThat(result.accounts()).hasSize(1);
+        assertThat(result.rejectedRows()).hasSize(1);
+        assertThat(result.rejectedRows().get(0).reason()).contains("not a valid decimal amount");
     }
 
     private Path writeFile(String content) throws IOException {

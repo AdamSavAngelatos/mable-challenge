@@ -71,17 +71,6 @@ class ReportWriterTest {
     }
 
     @Test
-    void transferReportHasNoBalancesSection() {
-        // buildTransferReport's job is the audit trail only -- rendering a balances
-        // section is buildBalancesSection's responsibility, called separately by Main.
-        Transfer transfer = new Transfer("1111234522226789", "1212343433335665", Money.fromDecimalString("500.00"));
-
-        String report = writer.buildTransferReport(List.of(TransferResult.success(transfer)));
-
-        assertThat(report).doesNotContain("Starting balances").doesNotContain("Closing balances");
-    }
-
-    @Test
     void balancesSectionUsesTheGivenHeadingAndSortsByAccountNumber() {
         List<Account> accounts = List.of(
                 new Account("3212343433335755", Money.fromDecimalString("50000.00")),

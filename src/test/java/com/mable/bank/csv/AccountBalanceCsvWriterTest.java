@@ -34,7 +34,7 @@ class AccountBalanceCsvWriterTest {
     }
 
     @Test
-    void roundTripsThroughTheReader() throws IOException {
+    void writtenFileIsValidInputForTheReader() throws IOException {
         Path file = tempDir.resolve("out.csv");
         List<Account> original = List.of(
                 new Account("1111234522226789", Money.fromDecimalString("4820.50")),

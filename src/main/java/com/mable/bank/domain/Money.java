@@ -8,9 +8,16 @@ import java.util.Objects;
  * Immutable currency amount. Wraps BigDecimal (not double) to avoid float-precision
  * drift, and enforces a single, consistent scale/rounding policy everywhere so it
  * never has to be repeated at each call site.
+ *
+ * <p>The constructor is private; instances are created only through the static
+ * factory methods {@link #of}, {@link #fromDecimalString} and {@link #zero}, so every {@code Money}
+ * is guaranteed to have gone through that same scale/rounding normalization.
  */
 public final class Money {
 
+    // Standard commercial rounding for currency (an exact half always rounds away from
+    // zero, e.g. 5.005 -> 5.01), applied silently by every factory method below -- see
+    // fromDecimalString's javadoc for the caller-visible contract this produces.
     private static final int SCALE = 2;
     private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
 
@@ -21,11 +28,12 @@ public final class Money {
     }
 
     /**
-     * Wraps an existing {@link BigDecimal} as a {@code Money}, normalizing it to
-     * this class's fixed scale and rounding policy.
+     * Wraps an existing {@link BigDecimal} as a {@code Money}. If {@code amount} has more
+     * than 2 decimal places, it is silently rounded to 2 (HALF_UP) -- not rejected and
+     * not preserved at higher precision.
      *
      * @param amount the raw amount; must not be {@code null}
-     * @return a {@code Money} wrapping {@code amount}
+     * @return a {@code Money} wrapping {@code amount}, rounded to 2 decimal places
      * @throws NullPointerException if {@code amount} is {@code null}
      */
     public static Money of(BigDecimal amount) {
@@ -34,10 +42,12 @@ public final class Money {
     }
 
     /**
-     * Parses a decimal string (e.g. {@code "500.00"}) into a {@code Money}.
+     * Parses a decimal string (e.g. {@code "500.00"}) into a {@code Money}. If {@code value}
+     * has more than 2 decimal places (e.g. {@code "5.005"}), it is silently rounded to 2
+     * (HALF_UP, so {@code "5.005"} becomes {@code "5.01"}) -- not rejected as invalid.
      *
      * @param value the decimal string to parse; must not be {@code null} or blank
-     * @return a {@code Money} representing {@code value}
+     * @return a {@code Money} representing {@code value}, rounded to 2 decimal places
      * @throws IllegalArgumentException if {@code value} is blank or not a valid decimal
      */
     public static Money fromDecimalString(String value) {
@@ -97,6 +107,9 @@ public final class Money {
         return amount.compareTo(other.amount) == 0;
     }
 
+    // Not called anywhere in this codebase today, but required alongside equals() to
+    // satisfy Object's contract (equal objects must have equal hashCodes) -- skipping it
+    // would silently break any future HashSet<Money>/HashMap<Money, ?> usage.
     @Override
     public int hashCode() {
         return amount.stripTrailingZeros().hashCode();

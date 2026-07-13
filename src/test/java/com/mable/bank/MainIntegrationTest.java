@@ -73,6 +73,47 @@ class MainIntegrationTest {
         // Only the one unrelated transfer in the batch (6789 -> 5665, 500.00) should have
         // succeeded -- proving a rejection doesn't block the rest of the batch.
         assertThat(report).contains("Processed 4 transfers: 1 succeeded, 3 failed.");
+
+        // A rejection must leave both accounts it touched completely untouched, not just
+        // reported as rejected -- prove it against the actual written balances, not just
+        // the report text.
+        AccountBalanceCsvReader.Result closing =
+                new AccountBalanceCsvReader().read(outputDir.resolve("updated-account-balances.csv"));
+        assertThat(closing.accounts())
+                .extracting(Account::accountNumber, a -> a.getClosingBalance().toDecimalString())
+                .containsExactlyInAnyOrder(
+                        tuple("1111234522226789", "4500.00"),
+                        tuple("1111234522221234", "10000.00"),
+                        tuple("2222123433331212", "550.00"),
+                        tuple("1212343433335665", "1700.00"),
+                        tuple("3212343433335755", "50000.00")
+                );
+    }
+
+    @Test
+    void malformedRowsInBothInputFilesAreRejectedAndReportedEndToEnd() throws IOException {
+        Main.run(FIXTURES.resolve("account-balances-with-malformed-row.csv"),
+                FIXTURES.resolve("transactions-with-malformed-row.csv"), outputDir,
+                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8));
+
+        String report = Files.readString(outputDir.resolve("result.txt"));
+
+        // The malformed balance row is reported and never makes it into the ledger.
+        assertThat(report).contains("Loaded 2 accounts (1 row(s) rejected)");
+        assertThat(report).contains(
+                "[REJECTED] not-16-digits,1200.00 -> accountNumber must be exactly 16 digits: not-16-digits");
+
+        // The malformed transaction row is reported without blocking the other transfers.
+        assertThat(report).contains("[INVALID_ROW] bad-row -> expected 3 fields (from,to,amount), found 1");
+        assertThat(report).contains("Processed 3 transfers: 2 succeeded, 1 failed.");
+
+        // The malformed account never appears in the closing balances file, only the
+        // two accounts that parsed successfully do.
+        AccountBalanceCsvReader.Result closing =
+                new AccountBalanceCsvReader().read(outputDir.resolve("updated-account-balances.csv"));
+        assertThat(closing.accounts())
+                .extracting(Account::accountNumber)
+                .containsExactlyInAnyOrder("1111234522226789", "1212343433335665");
     }
 
     @Test

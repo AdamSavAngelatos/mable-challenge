@@ -60,11 +60,19 @@ class AccountTest {
     }
 
     @Test
-    void rejectsAccountNumbersThatAreNot16Digits() {
+    void rejectsAccountNumberWithWrongLength() {
+        // 5 digits, not 16
         assertThatThrownBy(() -> new Account("12345", Money.zero()))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("exactly 16 digits");
+    }
+
+    @Test
+    void rejectsAccountNumberWithNonDigitCharacters() {
+        // 16 characters, but the first four are letters, not digits
         assertThatThrownBy(() -> new Account("abcd234522226789", Money.zero()))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("exactly 16 digits");
     }
 
     @Test

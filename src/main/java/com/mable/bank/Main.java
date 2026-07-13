@@ -47,6 +47,21 @@ public final class Main {
         }
     }
 
+    /**
+     * Loads balances, applies the day's transfers, and writes every output artifact:
+     * the combined report to {@code out} and to {@code outputDir/result.txt}, and the
+     * closing balances to {@code outputDir/updated-account-balances.csv}. Separate from
+     * {@link #main} specifically so {@code MainIntegrationTest} can call it directly with
+     * an injected {@code PrintStream}, bypassing {@code main}'s argument parsing and
+     * {@code System.exit} calls.
+     *
+     * @param balancesPath     the balances CSV to load
+     * @param transactionsPath the day's transactions CSV to apply
+     * @param outputDir        directory the output files are written to; created if missing
+     * @param out              where the report is printed live (real {@code System.out} in
+     *                         production, an injected stream in tests)
+     * @throws IOException if any input file cannot be read or output file cannot be written
+     */
     static void run(Path balancesPath, Path transactionsPath, Path outputDir, java.io.PrintStream out) throws IOException {
         // Wire up the object graph by hand -- no DI framework needed at this size.
         Ledger ledger = new Ledger();
