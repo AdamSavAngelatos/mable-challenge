@@ -34,4 +34,16 @@ class TransferTest {
         assertThatThrownBy(() -> new Transfer("1111234522226789", "1212343433335665", null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void rejectsNegativeAmount() {
+        // Not just a format nicety: Account.debit()/credit() have no sign check of their
+        // own, so a negative amount would silently reverse the direction of a transfer
+        // instead of being rejected, if it were ever allowed to reach the ledger.
+        Money negative = Money.fromDecimalString("-5.00");
+
+        assertThatThrownBy(() -> new Transfer("1111234522226789", "1212343433335665", negative))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must not be negative");
+    }
 }
