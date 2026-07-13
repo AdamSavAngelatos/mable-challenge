@@ -9,7 +9,7 @@ package com.mable.bank.domain;
  *
  * @param fromAccountNumber the account to debit; must not be blank
  * @param toAccountNumber   the account to credit; must not be blank
- * @param amount            the amount to move; must not be {@code null}
+ * @param amount            the amount to move; must not be {@code null} or negative
  */
 public record Transfer(String fromAccountNumber, String toAccountNumber, Money amount) {
 
@@ -17,7 +17,7 @@ public record Transfer(String fromAccountNumber, String toAccountNumber, Money a
      * Checks the fields whenever a Transfer is created.
      *
      * @throws IllegalArgumentException if {@code fromAccountNumber} or {@code toAccountNumber}
-     *                                  is blank, or {@code amount} is {@code null}
+     *                                  is blank, or {@code amount} is {@code null} or negative.
      */
     public Transfer {
         if (fromAccountNumber == null || fromAccountNumber.isBlank()) {
@@ -27,7 +27,10 @@ public record Transfer(String fromAccountNumber, String toAccountNumber, Money a
             throw new IllegalArgumentException("toAccountNumber must not be blank");
         }
         if (amount == null) {
-            throw new IllegalArgumentException("amount must not be null");
+            throw new IllegalArgumentException("transfer amount must not be null");
+        }
+        if (amount.isNegative()) {
+            throw new IllegalArgumentException("transfer amount must not be negative: " + amount);
         }
     }
 }

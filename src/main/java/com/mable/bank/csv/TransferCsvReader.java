@@ -60,9 +60,6 @@ public final class TransferCsvReader {
         String from = fields[0].trim();
         String to = fields[1].trim();
         Money amount = Money.fromDecimalString(fields[2].trim());
-        if (amount.isNegative()) {
-            throw new IllegalArgumentException("transfer amount must not be negative: " + amount);
-        }
         return new Transfer(from, to, amount);
     }
 }
