@@ -47,7 +47,7 @@ mvn verify    # run the suite + generate a JaCoCo coverage report at target/site
 
 This system is deliberately small. Below are the choices that shape it.
 
-**Java** No language/framework was specified (the rubric says
+**Java:** No language/framework was specified (the rubric says
 "uses rspec," assuming a leftover from a Rails-based template). Java is my
 deepest current fluency, and the rubric's OO-flavored asks (domain models,
 encapsulation, separation of concerns) play to it directly.
@@ -63,10 +63,12 @@ SonarLint flags direct `System.out`/`PrintStream` use by default, on the
 assumption that console output is diagnostic logging that belongs behind a
 leveled, filterable logger. That assumption doesn't hold here: the report
 isn't diagnostic output, it's the program's actual primary deliverable — the
-same content also written to `result.txt`. Standard CLI convention keeps a
-tool's real output on stdout, separate from any diagnostic logging on stderr;
-routing it through a logging library would blur that distinction and add this
-project's first non-test runtime dependency for no real benefit.
+same content also written to `result.txt`. The
+[Command Line Interface Guidelines](https://clig.dev/) make this split
+explicit: "the primary output for your command should go to stdout,"
+while "log messages, errors, and so on should all be sent to stderr."
+Routing the report through a logging library would blur that distinction and
+add this project's first non-test runtime dependency for no real benefit.
 
 **CLI, not a REST service.** I considered a REST API, but the spec describes a
 batch process — "load balances... accept a day's transfers" — with no client
@@ -91,7 +93,7 @@ that can't occur. Less-constrained input, I'd reach for Apache Commons CSV
 instead.
 
 **A malformed account number in a transfer row isn't rejected at parse time —**
-unlike a malformed account number in the *balances* file, which is rejected
+unlike a malformed account number in the _balances_ file, which is rejected
 immediately by `Account`'s own constructor as it's parsed. Validating it again
 here would be redundant: the ledger only ever contains account numbers that
 already passed that check, so a malformed (or simply nonexistent) account
@@ -125,3 +127,9 @@ whole-batch abort.
   premise is banking. In production, authenticating the source (e.g.
   per-company signing) would sit at the same boundary an API gateway would
   normally enforce.
+- **No verbosity/quiet flag.** stdout always gets the full report today,
+  which is fine for interactive use but noisy for an unattended/scripted run.
+  The [CLI Guidelines](https://clig.dev/) recommend a `-q`/`--quiet` option
+  for exactly this — suppressing non-essential output without redirecting
+  stderr to `/dev/null` — which would be worth adding if this ran from cron
+  rather than a terminal.
