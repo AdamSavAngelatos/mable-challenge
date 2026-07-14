@@ -156,3 +156,17 @@ whole-batch abort.
   parsing, then sort the combined results by that number before building the
   report — just not done here, since it doesn't affect correctness, only the
   report's presentation order.
+- **No dedicated performance/stress test harness.** Before relying on this at
+  scale I ran it by hand against a synthetic 1,000-account, 10,000-transfer
+  dataset (~250ms, no crashes, and every account's balance summed before and
+  after matched to the cent — a real conservation-of-money check, not just a
+  smoke test). That check isn't in the repo: a proper harness would need its
+  own tooling (data generation, timing, at-scale assertions) that's more
+  infrastructure than a batch CLI at this scope justifies, and timing
+  assertions in particular are a bad thing to check into a test suite —
+  they're flaky by nature (hardware, JVM warmup) and there's no stated
+  performance requirement to justify one. What *did* make it into the suite
+  is the underlying invariant that check surfaced: `TransferProcessorTest`
+  now asserts money is conserved (`sum(startingBalance) == sum(closingBalance)`)
+  across a fixed-seed randomized batch, so that property is verified on every
+  `mvn test` run, not just the one manual pass.

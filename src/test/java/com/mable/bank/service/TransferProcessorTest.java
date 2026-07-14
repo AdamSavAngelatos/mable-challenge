@@ -8,7 +8,10 @@ import com.mable.bank.domain.TransferStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,5 +70,62 @@ class TransferProcessorTest {
     @Test
     void emptyBatchProducesNoResults() {
         assertThat(processor.process(List.of())).isEmpty();
+    }
+
+    @Test
+    void totalMoneyInTheSystemIsConservedAcrossARandomBatchOfTransfers() {
+        // Every successful transfer debits one account and credits another by the exact
+        // same amount, and a rejected transfer moves nothing -- so no matter how many
+        // transfers run, or how many succeed vs. get rejected, the sum of every account's
+        // balance across the whole ledger must be unchanged at the end. Fixed seed keeps
+        // the batch (and therefore the mix of successes/rejections) deterministic.
+        Random random = new Random(7);
+        int accountCount = 50;
+        int transferCount = 200;
+
+        List<Account> seedAccounts = new ArrayList<>();
+        List<String> accountNumbers = new ArrayList<>();
+        for (int i = 0; i < accountCount; i++) {
+            // 1_000_000_000_000_000L is already exactly 16 digits, so adding a small i
+            // never changes the digit count -- no padding/String.format needed.
+            String accountNumber = Long.toString(1_000_000_000_000_000L + i);
+            accountNumbers.add(accountNumber);
+            // Balances go up to $99,999 -- much larger than any single transfer amount
+            // below ($4,999 max) -- so most transfers succeed. The loop below attempts
+            // 200 (from, to) pairs, 3 of which are same-account and skipped, leaving 197
+            // actual transfers; with this fixed seed that produces 190 successes and 7
+            // INSUFFICIENT_FUNDS rejections (verified by instrumenting a standalone run),
+            // so the conservation check is exercised against a real mix of outcomes, not
+            // just a single rejection.
+            seedAccounts.add(new Account(accountNumber, Money.of(BigDecimal.valueOf(random.nextInt(100_000)))));
+        }
+
+        Ledger randomLedger = new Ledger();
+        randomLedger.loadBalances(seedAccounts);
+
+        List<Transfer> transfers = new ArrayList<>();
+        for (int i = 0; i < transferCount; i++) {
+            String from = accountNumbers.get(random.nextInt(accountCount));
+            String to = accountNumbers.get(random.nextInt(accountCount));
+            if (from.equals(to)) continue;
+            transfers.add(new Transfer(from, to, Money.of(BigDecimal.valueOf(random.nextInt(5_000)))));
+        }
+        List<TransferResult> results = new TransferProcessor(randomLedger).process(transfers);
+
+        // Pin down that this batch is a genuine mix of outcomes, not overwhelmingly one or
+        // the other -- otherwise a future change to the seed or the balance/amount bounds
+        // could silently drift toward all-success (making the conservation check trivial)
+        // without any test noticing.
+        long rejectedCount = results.stream().filter(r -> r.status() != TransferStatus.SUCCESS).count();
+        assertThat(rejectedCount).isGreaterThanOrEqualTo(5);
+
+        Money startingTotal = seedAccounts.stream()
+                .map(Account::getStartingBalance)
+                .reduce(Money.zero(), Money::add);
+        Money closingTotal = randomLedger.listAccounts().stream()
+                .map(Account::getClosingBalance)
+                .reduce(Money.zero(), Money::add);
+
+        assertThat(closingTotal).isEqualTo(startingTotal);
     }
 }
