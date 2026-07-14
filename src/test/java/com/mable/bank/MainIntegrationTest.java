@@ -19,6 +19,15 @@ import static org.assertj.core.api.Assertions.tuple;
 
 class MainIntegrationTest {
 
+    // TODO: edge cases identified but not yet covered by a test here:
+    // - an empty transactions file (zero transfers) -- a company with no activity for the
+    //   day should still produce a clean report and pass-through closing balances.
+    // - a self-transfer (fromAccountNumber == toAccountNumber) -- currently succeeds as a
+    //   net no-op because Ledger.applyTransfer() debits then credits the same Account
+    //   object, but that's an emergent property of the lookup, not a deliberate check.
+    // - a zero-amount transfer -- Transfer's constructor rejects negative amounts but not
+    //   zero, so a $0.00 transfer is currently accepted and always trivially succeeds.
+
     private static final Path FIXTURES = Paths.get("src/test/resources/fixtures");
 
     @TempDir
