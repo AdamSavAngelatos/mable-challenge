@@ -125,13 +125,35 @@ whole-batch abort.
   the end of a batch run — named plainly as a simplification specific to
   this exercise's scope, not a claim that file-based state is how a real
   system should work.
+- **No concept of time anywhere in the domain model.** Nothing in this system
+  — not `Transfer`, not `TransferResult`, not any input or output file —
+  records *when* anything happened or *which* business day a run represents,
+  even though the spec's own framing is explicitly day-oriented ("each day
+  companies provide you with a CSV file"). That's the actual root cause of
+  the idempotency gap below, not a separate issue: the program has no way to
+  notice a replay because there's nothing for it to check against.
+
+  The business date belongs on the *input* side — it's a property of the
+  day's submission, not something the program should invent from a wall
+  clock after the fact. A more complete design would timestamp all three
+  places this system touches files: the input filenames (`transactions-
+  2026-07-14.csv`), the input data itself (a date on each row, or a header
+  line, so the date survives a rename and the program can actually validate
+  a file against the day it claims to be), and the output filenames (so
+  reruns stop silently overwriting the previous run's `result.txt` and
+  `updated-account-balances.csv` with zero trace, which they currently do).
+  Filename-level timestamps are the cheap, non-invasive fix; embedding the
+  date in the data itself is the robust, validate-able one, but it isn't
+  free — it means changing a CSV schema this project has otherwise treated
+  as a fixed, given contract (`MableBackEndCodeTest/` is read-only reference
+  input throughout), not one of this project's own design decisions to make.
 - **Idempotency, precisely scoped.** This tool is a pure function of its two
-  inputs, so re-running the _original_ files is naturally idempotent. The real
-  risk is a chaining one: mistakenly reprocessing the same `transactions.csv`
-  against the `updated-account-balances.csv` it already produced would
-  double-apply that day's transfers. That's a gap in the surrounding workflow
-  (date-stamped filenames, a processed-batch marker), not a defect in this
-  tool's logic.
+  inputs, so re-running the _original_ files is naturally idempotent —
+  nothing accumulates. But that property alone doesn't protect against the
+  wrong pair of files being fed in together: mistakenly reprocessing the same
+  `transactions.csv` against the `updated-account-balances.csv` it already
+  produced would silently double-apply that day's transfers, for exactly the
+  reason named above.
 - **No multi-company/tenant support** — the spec explicitly scopes this to a
   single company.
 - **No authentication/authorization.** This tool trusts whatever CSV it's
